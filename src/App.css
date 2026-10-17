@@ -1,0 +1,299 @@
+:root {
+  color-scheme: light;
+  font-family: Arial, Helvetica, sans-serif;
+  color: #222;
+  background: #fff;
+
+  --color-text: #202124;
+  --color-muted: #555;
+  --color-border: #d9dce1;
+  --color-row-hover: #f8f9fa;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  text-align: left;
+}
+
+.app {
+  width: 100%;
+  max-width: 1000px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* Encabezado de la liga */
+.encabezado-liga {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.logo-LaLiga {
+  width: 64px;
+  height: 64px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.etiqueta {
+  margin: 0 0 6px;
+  color: #777;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.encabezado-liga h1 {
+  margin: 0 0 6px;
+  color: var(--color-text);
+  font-size: 34px;
+  letter-spacing: -0.04em;
+}
+
+.encabezado-liga > div > p:last-child {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 15px;
+}
+
+/* Tabla de posiciones */
+.tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tabla-contenedor table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.tabla-contenedor th,
+.tabla-contenedor td {
+  padding: 13px 10px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: center;
+}
+
+.tabla-contenedor th {
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.tabla-contenedor th:nth-child(2),
+.tabla-contenedor td:nth-child(2) {
+  min-width: 175px;
+  text-align: left;
+}
+
+.tabla-contenedor tbody tr:hover {
+  background: var(--color-row-hover);
+}
+
+/* Escudos de los equipos */
+.escudo {
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  margin-right: 9px;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+/* Historial de partidos */
+.historial-partidos {
+  margin-top: 18px;
+  font-size: 14px;
+}
+
+.historial-partidos summary {
+  cursor: pointer;
+  color: #333;
+  font-weight: 600;
+}
+
+.historial-partidos ul {
+  padding-left: 20px;
+  line-height: 1.8;
+}
+
+/* Forma de los últimos cinco partidos */
+.forma-reciente {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.forma-badge {
+  display: inline-grid;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  place-items: center;
+}
+
+.forma-badge--g {
+  background: #2fa75a;
+}
+
+.forma-badge--e {
+  background: #9ca3af;
+}
+
+.forma-badge--p {
+  background: #e74c3c;
+}
+
+.sin-forma {
+  color: #777;
+}
+
+/* Ajustes para pantallas pequeñas */
+@media (max-width: 600px) {
+  .app {
+    padding: 24px 14px;
+  }
+
+  .encabezado-liga {
+    gap: 12px;
+  }
+
+  .logo-LaLiga {
+    width: 52px;
+    height: 52px;
+  }
+
+  .encabezado-liga h1 {
+    font-size: 28px;
+  }
+}
+
+/* Formulario de registro */
+.registro-partido {
+  margin-bottom: 24px;
+}
+
+.registro-partido h2 {
+  margin: 0 0 16px;
+  color: var(--color-text);
+  font-size: 22px;
+}
+
+.registro-partido form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 16px;
+}
+
+.registro-partido form label,
+.filtro-historial {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.registro-partido input,
+.registro-partido select,
+.filtro-historial select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #fff;
+  color: var(--color-text);
+  font: inherit;
+}
+
+.registro-partido form > button {
+  grid-column: 1 / -1;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 6px;
+  background: #c8102e;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.registro-partido form > button:hover {
+  background: #a80d26;
+}
+
+.error-validacion {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.historial-partidos {
+  margin-top: 20px;
+}
+
+.historial-partidos summary {
+  padding: 8px 0;
+}
+
+.historial-partidos ul {
+  padding-left: 0;
+  list-style: none;
+}
+
+.historial-partidos li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.historial-partidos li button {
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: #fff;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+/* Formulario en pantallas de celular */
+@media (max-width: 600px) {
+  .registro-partido form {
+    grid-template-columns: 1fr;
+  }
+
+  .registro-partido form > button,
+  .error-validacion {
+    grid-column: auto;
+  }
+
+  .historial-partidos li {
+    align-items: flex-start;
+  }
+}
