@@ -1,179 +1,116 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import './App.css';
 
-const equipos = [
-  {
-    id: 1,
-    nombre: 'Barcelona',
-    escudo: '/escudos/barcelona.png',
-  },
-  {
-    id: 2,
-    nombre: 'Atlético Madrid',
-    escudo: '/escudos/atletico.png',
-  },
-  {
-    id: 3,
-    nombre: 'Real Betis',
-    escudo: '/escudos/betis.png',
-  },
-  {
-    id: 4,
-    nombre: 'Real Madrid',
-    escudo: '/escudos/real-madrid.png',
-  },
-  {
-    id: 5,
-    nombre: 'Sevilla',
-    escudo: '/escudos/sevilla.png',
-  },
-  {
-    id: 6,
-    nombre: 'Real Sociedad',
-    escudo: '/escudos/real-sociedad.png',
-  },
-];
-
-function calcularTabla(equipos, partidos) {
-  const estadisticasIniciales = Object.fromEntries(
-    equipos.map((equipo) => [
-      equipo.id,
-      {
-        ...equipo,
-        pj: 0,
-        g: 0,
-        e: 0,
-        p: 0,
-        gf: 0,
-        gc: 0,
-        pts: 0,
-        forma: [],
-      },
-    ]),
-  );
-
-  const estadisticas = partidos.reduce((acumulado, partido) => {
-    const local = acumulado[partido.localId];
-    const visitante = acumulado[partido.visitanteId];
-
-    if (!local || !visitante) {
-      return acumulado;
-    }
-
-    local.pj += 1;
-    visitante.pj += 1;
-
-    local.gf += partido.golesLocal;
-    local.gc += partido.golesVisitante;
-    visitante.gf += partido.golesVisitante;
-    visitante.gc += partido.golesLocal;
-
-    if (partido.golesLocal > partido.golesVisitante) {
-      local.g += 1;
-      local.pts += 3;
-      visitante.p += 1;
-    } else if (partido.golesLocal < partido.golesVisitante) {
-      visitante.g += 1;
-      visitante.pts += 3;
-      local.p += 1;
-    } else {
-      local.e += 1;
-      visitante.e += 1;
-      local.pts += 1;
-      visitante.pts += 1;
-    }
-
-    const resultadoLocal =
-      partido.golesLocal > partido.golesVisitante
-        ? 'G'
-        : partido.golesLocal < partido.golesVisitante
-          ? 'P'
-          : 'E';
-
-    const resultadoVisitante =
-      resultadoLocal === 'G'
-        ? 'P'
-        : resultadoLocal === 'P'
-          ? 'G'
-          : 'E';
-
-    local.forma.push(resultadoLocal);
-    visitante.forma.push(resultadoVisitante);
-
-    return acumulado;
-  }, estadisticasIniciales);
-
-  return Object.values(estadisticas)
-    .map((equipo) => ({
-      ...equipo,
-      dg: equipo.gf - equipo.gc,
-      forma: equipo.forma.slice(0, 5).reverse(),
-    }))
-    .sort(
-      (a, b) =>
-        b.pts - a.pts ||
-        b.dg - a.dg ||
-        b.gf - a.gf ||
-        a.nombre.localeCompare(b.nombre),
-    );
-}
+const API_URL = 'http://localhost:3000/api';
 
 function App() {
+  const [equipos, setEquipos] = useState([]);
+  const [tabla, setTabla] = useState([]);
   const [partidos, setPartidos] = useState([]);
+
   const [localId, setLocalId] = useState('1');
   const [visitanteId, setVisitanteId] = useState('2');
   const [golesLocal, setGolesLocal] = useState('');
   const [golesVisitante, setGolesVisitante] = useState('');
-  const [error, setError] = useState('');
   const [filtroEquipo, setFiltroEquipo] = useState('todos');
 
-  function eliminarPartido(id) {
-    setPartidos((partidosActuales) =>
-      partidosActuales.filter((partido) => partido.id !== id),
-    );
-  }
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState('');
+  const [errorCarga, setErrorCarga] = useState('');
 
-  function registrarPartido(event) {
+  const cargarDatos = useCallback(async () => {
+    setCargando(true);
+    setErrorCarga('');
+
+    try {
+      const respuestas = await Promise.all([
+        fetch(`${API_URL}/equipos`),
+        fetch(`${API_URL}/tabla`),
+        fetch(`${API_URL}/partidos`),
+      ]);
+
+      if (respuestas.some((respuesta) => !respuesta.ok)) {
+        throw new Error('La API respondió con un error.');
+      }
+
+      const [equiposApi, tablaApi, partidosApi] = await Promise.all(
+        respuestas.map((respuesta) => respuesta.json()),
+      );
+
+      setEquipos(equiposApi);
+      setTabla(tablaApi);
+      setPartidos(partidosApi);
+    } catch (errorApi) {
+      setErrorCarga(
+        errorApi.message ||
+          'No se pudieron cargar los datos. Comprueba que la API esté activa.',
+      );
+    } finally {
+      setCargando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarDatos();
+  }, [cargarDatos]);
+
+  async function registrarPartido(event) {
     event.preventDefault();
-
-    const marcadorLocal = Number(golesLocal);
-    const marcadorVisitante = Number(golesVisitante);
-
-    if (localId === visitanteId) {
-      setError('Selecciona dos equipos diferentes.');
-      return;
-    }
-
-    if (
-      golesLocal === '' ||
-      golesVisitante === '' ||
-      !Number.isInteger(marcadorLocal) ||
-      !Number.isInteger(marcadorVisitante) ||
-      marcadorLocal < 0 ||
-      marcadorVisitante < 0
-    ) {
-      setError('Ingresa goles enteros iguales o mayores que cero.');
-      return;
-    }
-
-    const nuevoPartido = {
-      id: crypto.randomUUID(),
-      localId: Number(localId),
-      visitanteId: Number(visitanteId),
-      golesLocal: marcadorLocal,
-      golesVisitante: marcadorVisitante,
-    };
-
-    setPartidos((partidosActuales) => [
-      nuevoPartido,
-      ...partidosActuales,
-    ]);
-    setGolesLocal('');
-    setGolesVisitante('');
     setError('');
+
+    try {
+      const respuesta = await fetch(`${API_URL}/partidos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          localId: Number(localId),
+          visitanteId: Number(visitanteId),
+          golesLocal,
+          golesVisitante,
+        }),
+      });
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(resultado.error || 'No se pudo registrar el partido.');
+      }
+
+      setGolesLocal('');
+      setGolesVisitante('');
+      await cargarDatos();
+    } catch (errorApi) {
+      setError(
+        errorApi.message ||
+          'No se pudo registrar el partido. Comprueba que la API esté activa.',
+      );
+    }
   }
 
-  const tabla = calcularTabla(equipos, partidos);
+  async function eliminarPartido(id) {
+    setError('');
+
+    try {
+      const respuesta = await fetch(`${API_URL}/partidos/${id}`, {
+        method: 'DELETE',
+      });
+
+      const resultado = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(resultado.error || 'No se pudo eliminar el partido.');
+      }
+
+      await cargarDatos();
+    } catch (errorApi) {
+      setError(
+        errorApi.message ||
+          'No se pudo eliminar el partido. Comprueba que la API esté activa.',
+      );
+    }
+  }
 
   const partidosFiltrados = partidos.filter(
     (partido) =>
@@ -198,6 +135,12 @@ function App() {
         </div>
       </header>
 
+      {errorCarga && (
+        <p className="error-validacion" role="alert">
+          {errorCarga}
+        </p>
+      )}
+
       <section className="registro-partido">
         <h2>Registrar partido</h2>
 
@@ -207,6 +150,7 @@ function App() {
             <select
               value={localId}
               onChange={(event) => setLocalId(event.target.value)}
+              disabled={cargando}
             >
               {equipos
                 .filter((equipo) => equipo.id !== Number(visitanteId))
@@ -227,6 +171,7 @@ function App() {
               required
               value={golesLocal}
               onChange={(event) => setGolesLocal(event.target.value)}
+              disabled={cargando}
             />
           </label>
 
@@ -235,6 +180,7 @@ function App() {
             <select
               value={visitanteId}
               onChange={(event) => setVisitanteId(event.target.value)}
+              disabled={cargando}
             >
               {equipos
                 .filter((equipo) => equipo.id !== Number(localId))
@@ -255,10 +201,13 @@ function App() {
               required
               value={golesVisitante}
               onChange={(event) => setGolesVisitante(event.target.value)}
+              disabled={cargando}
             />
           </label>
 
-          <button type="submit">Guardar resultado</button>
+          <button type="submit" disabled={cargando}>
+            Guardar resultado
+          </button>
 
           {error && (
             <p className="error-validacion" role="alert">
@@ -275,6 +224,7 @@ function App() {
             <select
               value={filtroEquipo}
               onChange={(event) => setFiltroEquipo(event.target.value)}
+              disabled={cargando}
             >
               <option value="todos">Todos</option>
               {equipos.map((equipo) => (
@@ -304,12 +254,14 @@ function App() {
                 return (
                   <li key={partido.id}>
                     <span>
-                      {equipoLocal.nombre} {partido.golesLocal} -{' '}
-                      {partido.golesVisitante} {equipoVisitante.nombre}
+                      {equipoLocal?.nombre} {partido.golesLocal} -{' '}
+                      {partido.golesVisitante} {equipoVisitante?.nombre}
                     </span>
+
                     <button
                       type="button"
                       onClick={() => eliminarPartido(partido.id)}
+                      disabled={cargando}
                     >
                       Eliminar
                     </button>
@@ -340,52 +292,58 @@ function App() {
           </thead>
 
           <tbody>
-            {tabla.map((equipo, indice) => (
-              <tr key={equipo.id}>
-                <td>{indice + 1}</td>
-                <td>
-                  <img
-                    className="escudo"
-                    src={equipo.escudo}
-                    alt={`Escudo de ${equipo.nombre}`}
-                  />
-                  {equipo.nombre}
-                </td>
-                <td>{equipo.pj}</td>
-                <td>{equipo.g}</td>
-                <td>{equipo.e}</td>
-                <td>{equipo.p}</td>
-                <td>{equipo.gf}</td>
-                <td>{equipo.gc}</td>
-                <td>{equipo.dg > 0 ? `+${equipo.dg}` : equipo.dg}</td>
-                <td>
-                  <strong>{equipo.pts}</strong>
-                </td>
-                <td>
-                  <div className="forma-reciente">
-                    {equipo.forma.length === 0 ? (
-                      <span className="sin-forma">—</span>
-                    ) : (
-                      equipo.forma.map((resultado, indiceForma) => (
-                        <span
-                          key={`${equipo.id}-${indiceForma}`}
-                          className={`forma-badge forma-badge--${resultado.toLowerCase()}`}
-                          title={
-                            resultado === 'G'
-                              ? 'Victoria'
-                              : resultado === 'E'
-                                ? 'Empate'
-                                : 'Derrota'
-                          }
-                        >
-                          {resultado}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </td>
+            {cargando ? (
+              <tr>
+                <td colSpan="11">Cargando datos de la API…</td>
               </tr>
-            ))}
+            ) : (
+              tabla.map((equipo, indice) => (
+                <tr key={equipo.id}>
+                  <td>{indice + 1}</td>
+                  <td>
+                    <img
+                      className="escudo"
+                      src={equipo.escudo}
+                      alt={`Escudo de ${equipo.nombre}`}
+                    />
+                    {equipo.nombre}
+                  </td>
+                  <td>{equipo.pj}</td>
+                  <td>{equipo.g}</td>
+                  <td>{equipo.e}</td>
+                  <td>{equipo.p}</td>
+                  <td>{equipo.gf}</td>
+                  <td>{equipo.gc}</td>
+                  <td>{equipo.dg > 0 ? `+${equipo.dg}` : equipo.dg}</td>
+                  <td>
+                    <strong>{equipo.pts}</strong>
+                  </td>
+                  <td>
+                    <div className="forma-reciente">
+                      {equipo.forma.length === 0 ? (
+                        <span className="sin-forma">—</span>
+                      ) : (
+                        equipo.forma.map((resultado, indiceForma) => (
+                          <span
+                            key={`${equipo.id}-${indiceForma}`}
+                            className={`forma-badge forma-badge--${resultado.toLowerCase()}`}
+                            title={
+                              resultado === 'G'
+                                ? 'Victoria'
+                                : resultado === 'E'
+                                  ? 'Empate'
+                                  : 'Derrota'
+                            }
+                          >
+                            {resultado}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>
